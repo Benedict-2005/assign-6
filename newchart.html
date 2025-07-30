@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Births and Deaths Chart</title>
-    <script src="https://unpkg.com/frappe-charts@latest/dist/frappe-charts.min.js"></script>
+    <title>Birth and Death Data</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="chart"></div>
-    <a id="navigation" href="/index.html">View estimative data</a>
-
-  <script src="newchart script.js"></script>
-  
+    <h1>Births and Deaths</h1>
+    <div id="birthChart" style="height: 450px;"></div>
+    <button onclick="window.location.href='index.html'">Go back</button>
+    <script src="https://cdn.jsdelivr.net/npm/frappe-charts@1.2.4/dist/frappe-charts.min.iife.js"></script>
+    <script src="newchart.js"></script>
 </body>
 </html>

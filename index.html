@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Population Chart</title>
-    <script src="https://unpkg.com/frappe-charts@latest/dist/frappe-charts.min.js"></script>
+    <title>Population Data</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <input type="text" id="input-area" placeholder="Enter municipality or whole country">
-    <button id="submit-data">Submit</button>
-    <div id="chart"></div>
+    <h1>Population Growth</h1>
+    <form id="dataForm">
+        <input type="text" id="municipality" placeholder="Enter municipality">
+        <button type="submit">Submit</button>
+    </form>
+    <div id="chart" style="height: 450px;"></div>
     <button id="add-data">Add Data</button>
-    <a id="navigation" href="/newchart.html">View birth and death charts</a>
- <script src="index script.js"></script>
-
+    <button id="navigation" onclick="window.location.href='newchart.html'">View birth and death charts</button>
+    <script src="https://cdn.jsdelivr.net/npm/frappe-charts@1.2.4/dist/frappe-charts.min.iife.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
