@@ -90,7 +90,7 @@ function renderChart(data, predictedYears = [], predictedValues = []) {
             dotSize: 4,
             hideDots: 0
         },
-        valuesOverPoints: 1
+        valuesOverPoints: 0
     });
 }
 
@@ -128,7 +128,7 @@ document.getElementById('add-data').addEventListener('click', () => {
         deltaSum += values[i] - values[i - 1];
     }
     const meanDelta = deltaSum / (values.length - 1);
-    const newValue = values[values.length - 1] - meanDelta; // Subtract mean delta
+    const newValue = values[values.length - 1] + meanDelta; // Subtract mean delta
 
     const lastYear = parseInt(predictedYears[predictedYears.length - 1] || '2021') || 2021;
     if (predictedYears.length >= 5) {
