@@ -2,7 +2,15 @@ console.log('Checking Frappe Charts in newchart:', typeof frappe !== 'undefined'
 
 const API_URL = 'https://statfin.stat.fi/PxWeb/api/v1/en/StatFin/synt/statfin_synt_pxt_12dy.px';
 
-async function fetchBirthDeathData(type) {
+// Get municipality from URL parameters
+function getMunicipalityFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const municipality = params.get('municipality') || 'SSS';
+    const name = params.get('name') || 'whole country';
+    return { code: municipality, name: name };
+}
+
+async function fetchBirthDeathData(type, municipalityCode) {
     const requestBody = {
         "query": [
             {
@@ -16,7 +24,7 @@ async function fetchBirthDeathData(type) {
                 "code": "Alue",
                 "selection": {
                     "filter": "item",
-                    "values": ["SSS"]
+                    "values": [municipalityCode]
                 }
             },
             {
@@ -57,8 +65,11 @@ async function renderBirthDeathChart() {
         return;
     }
 
-    const birthData = await fetchBirthDeathData('birth');
-    const deathData = await fetchBirthDeathData('death');
+    const municipality = getMunicipalityFromURL();
+    console.log('Rendering chart for municipality:', municipality);
+
+    const birthData = await fetchBirthDeathData('birth', municipality.code);
+    const deathData = await fetchBirthDeathData('death', municipality.code);
 
     if (!birthData || !deathData) {
         console.error('Failed to load birth or death data');
@@ -75,7 +86,7 @@ async function renderBirthDeathChart() {
     };
 
     new frappe.Chart("#birthChart", {
-        title: "Births and deaths in whole country",
+        title: "Births and deaths in " + municipality.name,
         data: chartData,
         type: 'bar',
         height: 450,

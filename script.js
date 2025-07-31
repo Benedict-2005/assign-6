@@ -25,8 +25,9 @@ async function fetchValidCodes() {
             
             // Create mapping between codes and names
             for (let i = 0; i < validCodes.length; i++) {
-                codeToNameMap[validCodes[i]] = validNames[i];
-                nameToCodeMap[validNames[i].toLowerCase()] = validCodes[i];
+                const displayName = validNames[i] === "WHOLE COUNTRY" ? "whole country" : validNames[i];
+                codeToNameMap[validCodes[i]] = displayName;
+                nameToCodeMap[displayName.toLowerCase()] = validCodes[i];
             }
             
             console.log('Valid municipality codes and names loaded:', validCodes.length, 'entries');
@@ -35,21 +36,16 @@ async function fetchValidCodes() {
         }
     } catch (error) {
         console.error('Error fetching valid codes:', error);
-        // Fallback: allow "whole country" and basic validation
+        // Fallback: basic validation with just SSS
         validCodes = ["SSS"];
         validNames = ["WHOLE COUNTRY"];
-        codeToNameMap = {"SSS": "WHOLE COUNTRY"};
+        codeToNameMap = {"SSS": "whole country"};
         nameToCodeMap = {"whole country": "SSS"};
     }
 }
 
 function validateMunicipalityCode(municipality) {
     const input = municipality.trim().toLowerCase();
-    
-    // Check if it's "whole country" (case insensitive)
-    if (input === "whole country") {
-        return true;
-    }
     
     // Check if valid codes have been loaded
     if (validCodes.length === 0) {
@@ -73,11 +69,6 @@ function validateMunicipalityCode(municipality) {
 // Convert municipality name to code for API calls
 function getMunicipalityCode(municipality) {
     const input = municipality.trim().toLowerCase();
-    
-    // Handle "whole country" case
-    if (input === "whole country") {
-        return "SSS";
-    }
     
     // If it's already a code, return it uppercase
     if (validCodes.includes(municipality.toUpperCase())) {
@@ -171,6 +162,17 @@ function renderChart(data, predictedYears = [], predictedValues = []) {
     const municipalityCode = getMunicipalityCode(inputValue);
     const displayName = codeToNameMap[municipalityCode] || inputValue;
 
+    // Update navigation button to pass current municipality
+    const navButton = document.getElementById('navigation');
+    if (navButton) {
+        navButton.onclick = () => {
+            const params = new URLSearchParams();
+            params.set('municipality', municipalityCode);
+            params.set('name', displayName);
+            window.location.href = `newchart.html?${params.toString()}`;
+        };
+    }
+
     chartInstance = new frappe.Chart("#chart", {
         title: "Population growth in " + displayName,
         data: chartData,
@@ -248,8 +250,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // First, fetch the valid municipality codes
     await fetchValidCodes();
     
-    // Then load the default chart
-    document.getElementById('input-area').value = "whole country"; // Set input value
-    const data = await fetchData("whole country");
+    const data = await fetchData("SSS");
     if (data) renderChart(data);
+    
+    // Initialize navigation button for default state
+    const navButton = document.getElementById('navigation');
+    if (navButton) {
+        navButton.onclick = () => {
+            const params = new URLSearchParams();
+            params.set('municipality', 'SSS');
+            params.set('name', 'whole country');
+            window.location.href = `newchart.html?${params.toString()}`;
+        };
+    }
 });
