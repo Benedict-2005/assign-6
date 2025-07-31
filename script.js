@@ -5,6 +5,93 @@ let chartInstance = null; // Store the chart instance globally
 let originalData = null; // Store the original API data
 let predictedYears = [];
 let predictedValues = [];
+let validCodes = []; // Store valid municipality codes fetched from API
+let validNames = []; // Store valid municipality names fetched from API
+let codeToNameMap = {}; // Map codes to names
+let nameToCodeMap = {}; // Map names to codes
+
+// Fetch valid municipality codes and names from the API
+async function fetchValidCodes() {
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        
+        // Extract the Area (Alue) codes and names from the API response
+        const areaVariable = data.variables.find(variable => variable.code === "Alue");
+        if (areaVariable && areaVariable.values && areaVariable.valueTexts) {
+            validCodes = areaVariable.values;
+            validNames = areaVariable.valueTexts;
+            
+            // Create mapping between codes and names
+            for (let i = 0; i < validCodes.length; i++) {
+                codeToNameMap[validCodes[i]] = validNames[i];
+                nameToCodeMap[validNames[i].toLowerCase()] = validCodes[i];
+            }
+            
+            console.log('Valid municipality codes and names loaded:', validCodes.length, 'entries');
+        } else {
+            console.error('Could not find Area codes/names in API response');
+        }
+    } catch (error) {
+        console.error('Error fetching valid codes:', error);
+        // Fallback: allow "whole country" and basic validation
+        validCodes = ["SSS"];
+        validNames = ["WHOLE COUNTRY"];
+        codeToNameMap = {"SSS": "WHOLE COUNTRY"};
+        nameToCodeMap = {"whole country": "SSS"};
+    }
+}
+
+function validateMunicipalityCode(municipality) {
+    const input = municipality.trim().toLowerCase();
+    
+    // Check if it's "whole country" (case insensitive)
+    if (input === "whole country") {
+        return true;
+    }
+    
+    // Check if valid codes have been loaded
+    if (validCodes.length === 0) {
+        console.warn('Valid codes not loaded yet, allowing input');
+        return true; // Allow if codes haven't been loaded yet
+    }
+    
+    // Check if it's a valid municipality code (case insensitive)
+    if (validCodes.includes(municipality.toUpperCase())) {
+        return true;
+    }
+    
+    // Check if it's a valid municipality name (case insensitive)
+    if (nameToCodeMap.hasOwnProperty(input)) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Convert municipality name to code for API calls
+function getMunicipalityCode(municipality) {
+    const input = municipality.trim().toLowerCase();
+    
+    // Handle "whole country" case
+    if (input === "whole country") {
+        return "SSS";
+    }
+    
+    // If it's already a code, return it uppercase
+    if (validCodes.includes(municipality.toUpperCase())) {
+        return municipality.toUpperCase();
+    }
+    
+    // If it's a name, convert to code
+    if (nameToCodeMap.hasOwnProperty(input)) {
+        return nameToCodeMap[input];
+    }
+    
+    // Fallback: return input as-is
+    return municipality.toUpperCase();
+}
 
 async function fetchData(municipality) {
     const requestBody = {
@@ -20,7 +107,7 @@ async function fetchData(municipality) {
                 "code": "Alue",
                 "selection": {
                     "filter": "item",
-                    "values": [municipality === "whole country" ? "SSS" : municipality]
+                    "values": [municipality === "SSS" || municipality.toLowerCase() === "whole country" ? "SSS" : municipality]
                 }
             },
             {
@@ -79,8 +166,13 @@ function renderChart(data, predictedYears = [], predictedValues = []) {
         ]
     };
 
+    // Get display name for chart title
+    const inputValue = document.getElementById('input-area').value || "whole country";
+    const municipalityCode = getMunicipalityCode(inputValue);
+    const displayName = codeToNameMap[municipalityCode] || inputValue;
+
     chartInstance = new frappe.Chart("#chart", {
-        title: "Population growth in " + (document.getElementById('input-area').value || "whole country"),
+        title: "Population growth in " + displayName,
         data: chartData,
         type: 'line',
         height: 450,
@@ -96,10 +188,19 @@ function renderChart(data, predictedYears = [], predictedValues = []) {
 
 document.getElementById('dataForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const municipality = document.getElementById('input-area').value.toLowerCase() || "whole country";
+    const municipalityInput = document.getElementById('input-area').value.trim() || "whole country";
+    
+    // Validate the municipality code or name
+    if (!validateMunicipalityCode(municipalityInput)) {
+        alert(`Error: Invalid municipality code or name "${municipalityInput}". Please enter a valid municipality code, name, or "whole country".`);
+        return;
+    }
+    
+    // Convert to proper code for API call
+    const municipalityCode = getMunicipalityCode(municipalityInput);
     predictedYears = []; // Reset predictions on new submission
     predictedValues = [];
-    const data = await fetchData(municipality);
+    const data = await fetchData(municipalityCode);
     if (data) renderChart(data);
 });
 
@@ -142,8 +243,12 @@ document.getElementById('add-data').addEventListener('click', () => {
     renderChart(originalData, predictedYears, predictedValues);
 });
 
-// Automatically query "whole country" on page load
+// Automatically query "whole country" on page load and fetch valid codes
 document.addEventListener('DOMContentLoaded', async () => {
+    // First, fetch the valid municipality codes
+    await fetchValidCodes();
+    
+    // Then load the default chart
     document.getElementById('input-area').value = "whole country"; // Set input value
     const data = await fetchData("whole country");
     if (data) renderChart(data);

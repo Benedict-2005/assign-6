@@ -74,7 +74,7 @@ async function renderBirthDeathChart() {
         ]
     };
 
-    new frappe.Chart("#chart", {
+    new frappe.Chart("#birthChart", {
         title: "Births and deaths in whole country",
         data: chartData,
         type: 'bar',
